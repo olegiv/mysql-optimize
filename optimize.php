@@ -17,23 +17,41 @@ if (php_sapi_name () !== 'cli') {
 	die ('Error: This script should be executed in CLI mode only.');
 }
 
-$options = getopt ('d::h::p::u::', array ('database::', 'help::', 'password::', 'username::'));
+$parameters = array (
+	'd::' => 'database::',
+	'h::' => 'help::',
+	'p::' => 'password::',
+	'u::' => 'username::'
+);
+
+$options = getopt (implode('', array_keys($parameters)), $parameters);
 
 if (isset ($options['help']) || isset ($options['h'])) {
 	print_syntax ();
 }
 
-$database = $options['database'];
+if ($options['database']) {
+	$database = $options['database'];
+} else if ($options['d']) {
+	$database = $options['d'];
+} else {
+	$database = '';
+}
 
 if ($options['username']) {
 	$username = $options['username'];
+} else if ($options['u']) {
+	$username = $options['u'];
 } else {
 	$username_array = array ();
 	exec ('whoami', &$username_array);
 	$username = $username_array[0];
 }
+
 if ($options['password']) {
 	$password = $options['password'];
+} else if ($options['p']) {
+	$password = $options['p'];
 } else {
 	$password = get_password ('Enter password for user ' . $username . ': ');
 }
@@ -82,15 +100,17 @@ $DB->close ();
 echo 'Optimization done, saved ' . display_filesize ($count_free_before - $count_free_after) . '.' . NEWLINE;
 
 /**
- * 
+ * Prins syntax.
  */
 function print_syntax () {
 	
-	die ('Syntax: php optimize.php [--database=database_name] [--username=username] [--password=password]' . NEWLINE);
+	die ('Syntax: php optimize.php [--database=database_name | -ddatabase_name] ' .
+		'[--username=username | -uusername] [--password=password | -ppassword]' . NEWLINE);
 	
 }
 
 /**
+ * Gets password from stdin.
  * 
  * @param string $prompt
  * @return string
@@ -103,7 +123,7 @@ function get_password ($prompt) {
 	}
 	$command = "/usr/bin/env bash -c 'read -s -p \"" . addslashes ($prompt) . "\" mypassword && echo \$mypassword'";
 	$password = rtrim (shell_exec ($command));
-  echo NEWLINE;
+	echo NEWLINE;
 	return $password;
 }
 
